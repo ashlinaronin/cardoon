@@ -4,21 +4,28 @@
 </head>
 <body>
 
-<button>start</button>
-
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.68/Tone.js"></script>
 <script type="text/javascript"
         src="https://cdn.jsdelivr.net/npm/startaudiocontext@1.2.1/StartAudioContext.min.js"></script>
+<script type="text/javascript" src="../tune-master/tune.js"></script>
 <script type="module">
-  const play = async () => {
+  // set up tune for alt scales
+  const tune = new Tune();
+  tune.loadScale("mean19");
+  tune.tonicize(220);
 
+  // alias tune.note for shorter access
+  const tn = tune.note.bind(tune);
+  
+  
+  const play = async () => {
     // synths
     const synthA = new Tone.FMSynth();
     const synthB = new Tone.AMSynth();
     const synthC = new Tone.PolySynth(Tone.Synth);
     const pulse = new Tone.PulseOscillator();
 
-    const pitchLfo = new Tone.LFO(1, 400, 450).start();
+    const pitchLfo = new Tone.LFO(1, tn(3, 2), tn(7, 2)).start();
 
     // fx
     const distortion = new Tone.Distortion(0.4);
@@ -27,7 +34,6 @@
 
     // inputs to synths
     pitchLfo.connect(synthB.frequency);
-
 
     // synths to fx
     synthA.connect(distortion);
@@ -43,20 +49,20 @@
     synthC.toDestination();
 
     // sequencing
-    const loopA = new Tone.Loop(time => synthA.triggerAttackRelease("C2", "8n", time), "4n").start(0).stop("3m");
-    const loopB = new Tone.Loop(time => synthB.triggerAttackRelease("C4", "8n", time), "4n").start("8n").stop("4m");
-    const loopC = new Tone.Loop(time => synthC.triggerAttackRelease("D3", "16n", time), "4n").start("16n").stop("2m");
+    const loopA = new Tone.Loop(time => synthA.triggerAttackRelease(tn(3, 2), "8n", time), "4n").start(0).stop("3m");
+    const loopB = new Tone.Loop(time => synthB.triggerAttackRelease(tn(4, 1), "8n", time), "4n").start("8n").stop("4m");
+    const loopC = new Tone.Loop(time => synthC.triggerAttackRelease(tn(5, 1), "16n", time), "4n").start("16n").stop("2m");
 
     Tone.Transport.scheduleRepeat(time => pulse.start(time).stop(time + 0.01), "8n", "8n", "2m");
 
     const seq = new Tone.Sequence((time, note) => {
       synthB.triggerAttackRelease(note, 0.1, time);
-    }, ["c4", ["E4", "D4", "E4"], "G4", ["A4", "G4"]]);
+    }, [tn(2), [tn(3), tn(4), tn(5)], tn(7), [tn(6), tn(5)]]);
     Tone.Transport.scheduleRepeat(time => seq.start(time).stop(time + 0.1), "16n", "4m");
 
     const chordEvent = new Tone.ToneEvent(((time, chord) => {
       synthC.triggerAttackRelease(chord, 0.5, time);
-    }), ["D4", "E4", "F4"]);
+    }), [tn(4), tn(6), tn(8)]);
     chordEvent.start();
     chordEvent.loop = 4;
     chordEvent.loopEnd = "1m";
